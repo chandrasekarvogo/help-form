@@ -172,7 +172,7 @@
 
                 options.data_id = data.data_id;
                 options.access_token = window.vogo.accessToken;
-                options.image = data.s3_link.jpg;
+                options.image = extractURLString(s3_url);
                 options.booking_id = formdata.booking_id;
                 options.vehicle_number = formdata.vehicle_number;
                 options.comment = formdata.comment;
@@ -260,6 +260,27 @@
                 }
             });
         }
+        function imageUpload(method, url, data, cb) {
+            show();
+            activate();
+            $.ajax({
+                url: url,
+                type: method,
+                data: data,
+                cache: false,
+                contentType: "image/jpg",
+                processData: false,
+                success: function (result) {
+                    deactivate();
+                    cb(null, result)
+                },
+                error: function (error) {
+                    deactivate();
+                    errorCb(error);
+                    cb(error);
+                }
+            });
+        }
 
         function errorCb(error) {
             console.error(error);
@@ -270,7 +291,7 @@
             var file = $('#photo')[0].files[0];
             formData.append('file', $('#photo')[0].files[0]);
 
-            doAjaxCall('PUT', s3_url, formData, function (err, data) {
+            imageUpload('PUT', s3_url, formData, function (err, data) {
                 if (err) {
                     alert("error occurred on upload.Please retry")
                 } else {
