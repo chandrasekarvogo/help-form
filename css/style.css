@@ -44,6 +44,81 @@
      outline: none;
      color: #111111;
  }
+
+#loader {
+    visibility: hidden;
+  }
+  a{text-decoration: none;}
+  .loader-overlay {
+    position: fixed;
+    /* Sit on top of the page content */
+    display: block;
+    /* Hidden by default */
+    width: 100%;
+    /* Full width (cover the whole page) */
+    height: 100%;
+    /* Full height (cover the whole page) */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Black background with opacity */
+    z-index: 2;
+    /* Specify a stack order in case you're using a different order for other elements */
+    cursor: pointer;
+    /* Add a pointer on hover */
+  }
+  .loader-overlay.activate {
+    display: block;
+  }
+
+  .loader-overlay.show {
+    display: block;
+  }
+
+  .loader-wrapper {
+    position: absolute;
+    width: 90%;
+    height: 200px;
+    top: 20%;
+    left: 5%;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border-radius: 10px;
+  
+   
+  }
+  .loader-wrapper.activate {
+    display: flex;
+  }
+
+  .loader-wrapper.show {
+    display: flex;
+  }
+  
+  .spinner {
+    border: 5px solid #ffffff;
+    border-top: 5px solid #FFD500;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+  
+    100% {
+      transform: rotate(360deg);
+    }
+  }
  
  ::placeholder {
      color: black;
