@@ -57,7 +57,10 @@
                     <textarea rows="6" id="comment" name="comment" class="validate[required,length[6,300]]" placeholder="Please Enter the Comment"></textarea>
                 </label>
             </div>
-
+            <label class="container">Enable Location:*
+                <input id = "enable"type="checkbox" required>
+                <span class="checkmark"></span>
+           </label>
             <div class="submit">
                 <button name="submit" type="submit" id="submit">Submit</button>
             </div>
@@ -73,8 +76,7 @@
     <div class="msg-window" id="link_expired">
         <div class="alert alert-error fade in">
             <!-- <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a> -->
-            <strong>Error!</strong> This link has been expired, Please contact to customer support at <a href="tel:080-33512332">080-33512332</a>
-            or you may write us on <a href="mailto:help@vogo.in">help@vogo.in</a>
+            <strong>Error!</strong> This link has been expired, Please contact to customer support at <a href="tel:080-33512332">080-33512332</a> or you may write us on <a href="mailto:help@vogo.in">help@vogo.in</a>
         </div>
     </div>
     <script src="js/jquery-3.3.1.min.js"></script>
@@ -82,12 +84,12 @@
 
     <script>
         /**
-        API BASEURL
-        */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        API BASEURL
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        */
         // var APIEndPoint = 'https://test-consumer-api4.vogo.tech/api/v1/'
         var APIEndPoint = 'https://consumer.vogorental.com/api/v1/';
 
-        var s3_url = '';
+        var s3_url = {};
 
         var imageUploadFlag = {
             status: false,
@@ -99,17 +101,36 @@
         Getting current position of the user
         */
         function getLocation(cb) {
-        
+
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((position) => {
-                    // Construct current postion
+
+                var geoOptions = {
+                    timeout: 15 * 1000
+                }
+
+                var geoSuccess = function(position) {
                     const currentPos = {
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude,
                     };
                     window.vogo.currentPos = currentPos;
                     return cb(null, currentPos);
-                });
+                };
+                var geoError = function(error) {
+                    console.log('Error occurred. Error code: ' + error.code);
+                    if (error.code === 1) {
+                        alert("Please enable the Location permission");
+                    } else if (error.code === 3) {
+                        alert("Timed out");
+                    }
+                    // error.code can be:
+                    //   0: unknown error
+                    //   1: permission denied
+                    //   2: position unavailable (error response from location provider)
+                    //   3: timed out
+                };
+                navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
+
             } else {
                 cb('Navigation is not supported');
             }
@@ -149,7 +170,7 @@
             $('#link_expired').hide();
         }
 
-        $(document).ready(function () {
+        $(document).ready(function() {
             var options = {
                 enableHighAccuracy: true,
                 maximumAge: 15000
@@ -164,13 +185,14 @@
                 window.vogo.accessToken = accessToken;
                 var url = `${APIEndPoint}breakdown/activation/?access_token=${accessToken}`;
                 doAjaxCall('GET', url, {},
-                    function (err, data) {
+                    function(err, data) {
                         if (err) {
                             linkExpired();
                         } else {
                             if (data) {
                                 window.vogo.data = data;
-                                s3_url = data.s3_link.jpg;
+                                s3_url =
+                                    data.s3_link;
                             }
                         }
                     })
@@ -185,7 +207,7 @@
             });
 
 
-            $("#breakdown-form").submit(function (event) {
+            $("#breakdown-form").submit(function(event) {
                 event.preventDefault();
                 var formdata = getFormData()
                 var data = window.vogo.data;
@@ -199,7 +221,7 @@
                 options.comment = formdata.comment;
 
 
-                getLocation(function (err, data) {
+                getLocation(function(err, data) {
                     if (err) {
                         alert(err)
                     } else {
@@ -213,11 +235,11 @@
                             cache: false,
                             contentType: "application/json; charset=UTF-8",
                             processData: false,
-                            success: function (result) {
+                            success: function(result) {
                                 deactivate();
                                 thanks()
                             },
-                            error: function (error) {
+                            error: function(error) {
                                 deactivate();
                                 errorCb(error);
                                 getPositionError({});
@@ -229,7 +251,7 @@
 
             });
 
-            $('#photo').change(function () {
+            $('#photo').change(function() {
                 uploadImage()
             })
         });
@@ -249,7 +271,7 @@
         function getFormData() {
             var unindexed_array = $('#breakdown-form').serializeArray();
             var indexed_array = {};
-            $.map(unindexed_array, function (n, i) {
+            $.map(unindexed_array, function(n, i) {
                 indexed_array[n['name']] = n['value'];
             });
             if (imageUploadFlag.status) {
@@ -271,11 +293,11 @@
                 cache: false,
                 contentType: false,
                 processData: false,
-                success: function (result) {
+                success: function(result) {
                     deactivate();
                     cb(null, result)
                 },
-                error: function (error) {
+                error: function(error) {
                     deactivate();
                     errorCb(error);
                     cb(error);
@@ -293,11 +315,11 @@
                 cache: false,
                 contentType: "image/jpg",
                 processData: false,
-                success: function (result) {
+                success: function(result) {
                     deactivate();
                     cb(null, result)
                 },
-                error: function (error) {
+                error: function(error) {
                     deactivate();
                     errorCb(error);
                     cb(error);
@@ -314,20 +336,45 @@
             var file = $('#photo')[0].files[0];
             formData.append('file', $('#photo')[0].files[0]);
 
-            imageUpload('PUT', s3_url, formData, function (err, data) {
-                if (err) {
-                    alert("error occurred on upload.Please retry")
-                } else {
-                    imageUploadFlag['status'] = true;
-                    var fr = new FileReader();
-                    fr.onload = function () {
-                        imageUploadFlag['url'] = fr.result;
-                        generatePreview();
-                    }
-                    fr.readAsDataURL(file);
-                }
+            var url;
+            var extension = file.name.split(".").pop();
 
-            })
+            switch (extension) {
+                case "jpg":
+                    url = s3_link.jpg;
+                    break;
+                case "png":
+                    url = s3_link.png;
+                    break;
+                case "jpeg":
+                    url = s3_link.jpeg;
+                    break;
+                default:
+                    alert("Invalid file formate");
+                    return;
+
+            }
+
+            if (url === "") {
+                alert("Please Upload the another Image");
+            } else {
+                imageUpload('PUT', s3_url, file, function(err, data) {
+                    if (err) {
+                        alert("error occurred on upload.Please retry")
+                    } else {
+                        imageUploadFlag['status'] = true;
+                        var fr = new FileReader();
+                        fr.onload = function() {
+                            imageUploadFlag['url'] = fr.result;
+                            generatePreview();
+                        }
+                        fr.readAsDataURL(file);
+                    }
+
+                })
+            }
+
+
         }
 
         function extractURLString(str) {
@@ -341,6 +388,15 @@
             $('#image-preview').show();
             $('#photo, #photo-label, .photo .form-error').hide();
         }
+
+        /* */
+        $('input[type=checkbox]').change(function() {
+            if ($(this).is(':checked')) {
+                alert("Please allow to get your location if prompted");
+            } else {
+                // Checkbox is not checked..
+            }
+        });
     </script>
 </body>
 
