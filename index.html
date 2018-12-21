@@ -13,17 +13,8 @@
     <link rel="shortcut icon" href="https://vogo.in/wp-content/themes/vogoClassic/assets/favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300" />
-    <link rel="stylesheet" type="text/css" href="./css/style.css">
-    <style>
-        .form-error{
-       color: rgb(185, 74, 72);
-    }
-    #image-preview{
-        width: 20vw;
-        height: 40vh;
-        display: none;
-    }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/new.css">
 </head>
 
 <body>
@@ -31,7 +22,7 @@
         <div class='loader-overlay'></div>
         <div class='loader-wrapper'>
             <div class='spinner'></div>
-            <div class='loader-message'>Please wait while we fetch information</div>
+            <div class='loader-message'>Please wait</div>
         </div>
     </div>
     <div id="contact-form">
@@ -73,25 +64,42 @@
         </form>
 
     </div>
-    <div class="link_expire">
-
+    <div class="msg-window" id="submit_success">
+        <div class="alert alert-success fade in">
+            <!-- <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a> -->
+            <strong>Success!</strong> Thanks, your request has been submitted successfully, our team working it.
+        </div>
+    </div>
+    <div class="msg-window" id="link_expired">
+        <div class="alert alert-error fade in">
+            <!-- <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a> -->
+            <strong>Error!</strong> This link has been expired, Please contact to customer support at <a href="tel:080-33512332">080-33512332</a>
+            or you may write us on <a href="mailto:help@vogo.in">help@vogo.in</a>
+        </div>
     </div>
     <script src="js/jquery-3.3.1.min.js"></script>
     <script src="js/jquery.form-validator.min.js"></script>
 
     <script>
-        var APIEndPoint = 'https://test-consumer-api4.vogo.tech/api/v1/'
+        /**
+        API BASEURL
+        */
+        // var APIEndPoint = 'https://test-consumer-api4.vogo.tech/api/v1/'
+        var APIEndPoint = 'https://consumer.vogorental.com/api/v1/';
 
         var s3_url = '';
-        // "https://s3.ap-south-1.amazonaws.com/test.consumer.vogo.tech/users/images/profiles/12312321213121.jpeg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWAS63OBRHF7LGPQ%2F20181220%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20181220T083601Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=b7357069c1ebfc4f4815f15d04ede20fa91a8673449cd672f3a5f3073a776fe7";
+
         var imageUploadFlag = {
             status: false,
             url: ''
         }
         window.vogo = {};
 
+        /**
+        Getting current position of the user
+        */
         function getLocation(cb) {
-            // Try HTML5 geolocation.
+        
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((position) => {
                     // Construct current postion
@@ -128,34 +136,47 @@
             container.classList.remove('activate');
             container.classList.add('show');
         }
+
+        function linkExpired() {
+            $('#contact-form').hide();
+            $('#submit_success').hide();
+            $('#link_expired').show();
+        }
+
+        function thanks() {
+            $('#contact-form').hide();
+            $('#submit_success').show();
+            $('#link_expired').hide();
+        }
+
         $(document).ready(function () {
             var options = {
                 enableHighAccuracy: true,
                 maximumAge: 15000
             };
             var location = {};
-            //enable it once you get the data
-            // navigator.geolocation.getCurrentPosition(showPosition, getPositionError, options);
+            /**
+            Getting access token from url
+            */
             var urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('access_token')) {
                 var accessToken = urlParams.get('access_token');
                 window.vogo.accessToken = accessToken;
-
-                doAjaxCall('GET', `${APIEndPoint}breakdown/activation/?access_token=${accessToken}`, {},
+                var url = `${APIEndPoint}breakdown/activation/?access_token=${accessToken}`;
+                doAjaxCall('GET', url, {},
                     function (err, data) {
                         if (err) {
-                            alert("Error Occurred Please Reload");
+                            linkExpired();
                         } else {
                             if (data) {
                                 window.vogo.data = data;
                                 s3_url = data.s3_link.jpg;
-
                             }
                         }
                     })
-
             } else {
-                alert("link has been expired");
+                alert("Please provide the valid link");
+                linkExpired();
             }
 
             // form validation
@@ -169,7 +190,7 @@
                 var formdata = getFormData()
                 var data = window.vogo.data;
                 var options = {};
-
+                activate();
                 options.data_id = data.data_id;
                 options.access_token = window.vogo.accessToken;
                 options.image = extractURLString(s3_url);
@@ -194,15 +215,16 @@
                             processData: false,
                             success: function (result) {
                                 deactivate();
-                                alert("Success");
+                                thanks()
                             },
                             error: function (error) {
                                 deactivate();
                                 errorCb(error);
-                                alert("Please Try again")
+                                getPositionError({});
                             }
                         });
                     }
+                    deactivate();
                 });
 
             });
@@ -260,6 +282,7 @@
                 }
             });
         }
+
         function imageUpload(method, url, data, cb) {
             show();
             activate();
