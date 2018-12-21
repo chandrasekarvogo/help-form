@@ -13,105 +13,231 @@
     <link rel="shortcut icon" href="https://vogo.in/wp-content/themes/vogoClassic/assets/favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300" />
-    <link rel="stylesheet" type="text/css" href="./css/style.css">
-    <style>
-    .form-error{
-       color: rgb(185, 74, 72);
-    }
-    #image-preview{
-        width: 20vw;
-        height: 40vh;
-        display: none;
-    }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/new.css">
 </head>
 
 <body>
+    <div id='loader'>
+        <div class='loader-overlay'></div>
+        <div class='loader-wrapper'>
+            <div class='spinner'></div>
+            <div class='loader-message'>Please wait</div>
+        </div>
+    </div>
     <div id="contact-form">
         <form method="post" id="breakdown-form" action="/ ">
 
             <h2>Details about the Incident</h2>
             <div>
                 <label for="booking_id">
-                      <span class="required ">Booking ID: *</span> <br>
-                      <input type="text" id="booking_id" name="booking_id"  placeholder="A3ADE3D4DSDSF" required="required"  autofocus="autofocus"  data-validation="required"/>
-                  </label>
+                    <span class="required ">Booking ID: *</span> <br>
+                    <input type="text" id="booking_id" name="booking_id" placeholder="A3ADE3D4DSDSF" required="required"
+                        autofocus="autofocus" data-validation="required" />
+                </label>
             </div>
             <div>
                 <label for="vehicle_number">
-                      <span class="required ">Vehicle Number: *</span><br>
-                      <input type="text" id="vehicle_number" data-validation="custom, required" data-validation-regexp="^[A-Z]{2}-[0-9]{2}-[A-Z]{2}-[0-9]{4}$" name="vehicle_number" placeholder="KA-05-AH-3344" required="required" />
-                  </label>
-            </div>
-            <div class="photo">
-                    <span class="required image">IMAGE: *</span><br>
-                    <!-- <span class="text">Please upload an Image</span> <br> -->
-                    <label class="photo" id="photo-label" for="photo">Upload Photo
-                    </label>
-                    <input id="photo" data-validation="required" type="file" accept="image/*" capture="camera">
-                    <img id="image-preview">
-                </div>
-            <div>
-                <label for="comment">
-                        <span>Comment:</span><br>
-                   <textarea rows="6"  id="comment" name="comment" class="validate[required,length[6,300]]" placeholder="Please Enter the Comment"></textarea>
+                    <span class="required ">Vehicle Number: *</span><br>
+                    <input type="text" id="vehicle_number" data-validation="custom, required" data-validation-regexp="^[A-Z]{2}-[0-9]{2}-[A-Z]{2}-[0-9]{4}$"
+                        name="vehicle_number" placeholder="KA-05-AH-3344" required="required" />
                 </label>
             </div>
-            
+            <div class="photo">
+                <span class="required image">IMAGE: *</span><br>
+                <!-- <span class="text">Please upload an Image</span> <br> -->
+                <label class="photo" id="photo-label" for="photo">Upload Photo
+                </label>
+                <input id="photo" data-validation="required" type="file" accept="image/*" capture="camera">
+                <img id="image-preview">
+            </div>
+            <div>
+                <label for="comment">
+                    <span>Comment:</span><br>
+                    <textarea rows="6" id="comment" name="comment" class="validate[required,length[6,300]]" placeholder="Please Enter the Comment"></textarea>
+                </label>
+            </div>
+
             <div class="submit">
                 <button name="submit" type="submit" id="submit">Submit</button>
             </div>
         </form>
 
     </div>
-    <div class="link_expire">
-
+    <div class="msg-window" id="submit_success">
+        <div class="alert alert-success fade in">
+            <!-- <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a> -->
+            <strong>Success!</strong> Thanks, your request has been submitted successfully, our team working it.
+        </div>
+    </div>
+    <div class="msg-window" id="link_expired">
+        <div class="alert alert-error fade in">
+            <!-- <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a> -->
+            <strong>Error!</strong> This link has been expired, Please contact to customer support at <a href="tel:080-33512332">080-33512332</a>
+            or you may write us on <a href="mailto:help@vogo.in">help@vogo.in</a>
+        </div>
     </div>
     <script src="js/jquery-3.3.1.min.js"></script>
     <script src="js/jquery.form-validator.min.js"></script>
 
     <script>
-        var s3_url = "https://s3.ap-south-1.amazonaws.com/test.consumer.vogo.tech/users/images/profiles/12312321213121.jpeg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWAS63OBRHF7LGPQ%2F20181220%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20181220T083601Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=b7357069c1ebfc4f4815f15d04ede20fa91a8673449cd672f3a5f3073a776fe7";
+        /**
+        API BASEURL
+        */
+        // var APIEndPoint = 'https://test-consumer-api4.vogo.tech/api/v1/'
+        var APIEndPoint = 'https://consumer.vogorental.com/api/v1/';
+
+        var s3_url = '';
+
         var imageUploadFlag = {
             status: false,
             url: ''
         }
-        $(document).ready(function(){
+        window.vogo = {};
+
+        /**
+        Getting current position of the user
+        */
+        function getLocation(cb) {
+        
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    // Construct current postion
+                    const currentPos = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    };
+                    window.vogo.currentPos = currentPos;
+                    return cb(null, currentPos);
+                });
+            } else {
+                cb('Navigation is not supported');
+            }
+        }
+
+        function activate() {
+            const container = document.getElementById('loader');
+            container.classList.remove('show');
+            container.classList.add('activate');
+            container.style.visibility = 'visible';
+
+        }
+
+        function deactivate() {
+            const container = document.getElementById('loader');
+            container.classList.remove('activate');
+            container.classList.remove('show');
+            container.style.visibility = 'hidden';
+        }
+
+        function show() {
+            const container = document.getElementById('loader');
+            container.style.visibility = 'visible';
+            container.classList.remove('activate');
+            container.classList.add('show');
+        }
+
+        function linkExpired() {
+            $('#contact-form').hide();
+            $('#submit_success').hide();
+            $('#link_expired').show();
+        }
+
+        function thanks() {
+            $('#contact-form').hide();
+            $('#submit_success').show();
+            $('#link_expired').hide();
+        }
+
+        $(document).ready(function () {
             var options = {
                 enableHighAccuracy: true,
                 maximumAge: 15000
             };
             var location = {};
-            //enable it once you get the data
-            // navigator.geolocation.getCurrentPosition(showPosition, getPositionError, options);
+            /**
+            Getting access token from url
+            */
             var urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.has('accessToken')){
-                var accessToken = urlParams.get('accessToken');
-            }else{
-                alert("link has been expired");
+            if (urlParams.has('access_token')) {
+                var accessToken = urlParams.get('access_token');
+                window.vogo.accessToken = accessToken;
+                var url = `${APIEndPoint}breakdown/activation/?access_token=${accessToken}`;
+                doAjaxCall('GET', url, {},
+                    function (err, data) {
+                        if (err) {
+                            linkExpired();
+                        } else {
+                            if (data) {
+                                window.vogo.data = data;
+                                s3_url = data.s3_link.jpg;
+                            }
+                        }
+                    })
+            } else {
+                alert("Please provide the valid link");
+                linkExpired();
             }
 
             // form validation
             $.validate({
-                form : '#breakdown-form'
+                form: '#breakdown-form'
             });
-            
 
-            $( "#breakdown-form" ).submit(function( event ) {
+
+            $("#breakdown-form").submit(function (event) {
                 event.preventDefault();
                 var formdata = getFormData()
-                console.log(formdata);
-                
+                var data = window.vogo.data;
+                var options = {};
+                activate();
+                options.data_id = data.data_id;
+                options.access_token = window.vogo.accessToken;
+                options.image = extractURLString(s3_url);
+                options.booking_id = formdata.booking_id;
+                options.vehicle_number = formdata.vehicle_number;
+                options.comment = formdata.comment;
+
+
+                getLocation(function (err, data) {
+                    if (err) {
+                        alert(err)
+                    } else {
+                        options.location = data;
+                        show();
+                        activate();
+                        $.ajax({
+                            url: `${APIEndPoint}breakdown/submit/`,
+                            type: 'POST',
+                            data: JSON.stringify(options),
+                            cache: false,
+                            contentType: "application/json; charset=UTF-8",
+                            processData: false,
+                            success: function (result) {
+                                deactivate();
+                                thanks()
+                            },
+                            error: function (error) {
+                                deactivate();
+                                errorCb(error);
+                                getPositionError({});
+                            }
+                        });
+                    }
+                    deactivate();
+                });
+
             });
 
-            $('#photo').change(function(){
+            $('#photo').change(function () {
                 uploadImage()
             })
         });
-        
+
         function showPosition(position) {
             location = position;
         }
+
         function getPositionError(err) {
             alert("We can't proceed without knowing your location, Please allow the location.");
         }
@@ -120,64 +246,101 @@
             alert("Please upload Image.");
         }
 
-        function getFormData(){
+        function getFormData() {
             var unindexed_array = $('#breakdown-form').serializeArray();
             var indexed_array = {};
-            $.map(unindexed_array, function(n, i){
+            $.map(unindexed_array, function (n, i) {
                 indexed_array[n['name']] = n['value'];
             });
-            if(imageUploadFlag.status){
+            if (imageUploadFlag.status) {
                 indexed_array['image_url'] = imageUploadFlag.url;
             }
-            if(!$.isEmptyObject(location)){
+            if (!$.isEmptyObject(location)) {
                 indexed_array['location'] = location;
             }
             return indexed_array;
         }
 
-        function doAjaxCall(method, url, data, cb){
+        function doAjaxCall(method, url, data, cb) {
+            show();
+            activate();
             $.ajax({
-                url: url, 
+                url: url,
                 type: method,
                 data: data,
-                cache:false,
+                cache: false,
                 contentType: false,
                 processData: false,
-                success: function(result){
-                    cb(result)
+                success: function (result) {
+                    deactivate();
+                    cb(null, result)
                 },
-                error: function(error){
+                error: function (error) {
+                    deactivate();
                     errorCb(error);
+                    cb(error);
                 }
             });
         }
 
-        function errorCb(error){
+        function imageUpload(method, url, data, cb) {
+            show();
+            activate();
+            $.ajax({
+                url: url,
+                type: method,
+                data: data,
+                cache: false,
+                contentType: "image/jpg",
+                processData: false,
+                success: function (result) {
+                    deactivate();
+                    cb(null, result)
+                },
+                error: function (error) {
+                    deactivate();
+                    errorCb(error);
+                    cb(error);
+                }
+            });
+        }
+
+        function errorCb(error) {
             console.error(error);
         }
 
-        function uploadImage(){
+        function uploadImage() {
             var formData = new FormData();
-                formData.append('file', $('#photo')[0].files[0]);
-                doAjaxCall('PUT', s3_url, formData, function(){
+            var file = $('#photo')[0].files[0];
+            formData.append('file', $('#photo')[0].files[0]);
+
+            imageUpload('PUT', s3_url, formData, function (err, data) {
+                if (err) {
+                    alert("error occurred on upload.Please retry")
+                } else {
                     imageUploadFlag['status'] = true;
-                    imageUploadFlag['url'] = extractURLString(s3_url);
-                    generatePreview();
-                })
+                    var fr = new FileReader();
+                    fr.onload = function () {
+                        imageUploadFlag['url'] = fr.result;
+                        generatePreview();
+                    }
+                    fr.readAsDataURL(file);
+                }
+
+            })
         }
-        
-        function extractURLString(str){
+
+        function extractURLString(str) {
             var pieces = str.split("?");
             return pieces[0];
         }
 
-        function generatePreview(){
+        function generatePreview() {
             var src = imageUploadFlag.url;
             $('#image-preview').attr("src", src);
             $('#image-preview').show();
             $('#photo, #photo-label, .photo .form-error').hide();
         }
-        
     </script>
 </body>
 
