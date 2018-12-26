@@ -83,6 +83,16 @@
     <script src="js/jquery.form-validator.min.js"></script>
 
     <script>
+        navigator.permissions.query({
+            name: 'geolocation'
+        }).then(function (result) {
+            if (result.state == 'granted') {
+                console.log("granted")
+            } else if (result.state == 'prompt') {
+                console.log("promt")
+            }
+            // Don't do anything if the permission was denied.
+        });
         /**
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         API BASEURL
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         */
@@ -261,7 +271,7 @@
         }
 
         function getPositionError(err) {
-            alert("We can't proceed without knowing your location, Please allow the location.");
+            alert("Error occured while submitting.");
         }
 
         function ImageError(err) {
@@ -331,12 +341,28 @@
             console.error(error);
         }
 
-        function uploadImage() {
-            var formData = new FormData();
-            var file = $('#photo')[0].files[0];
-            formData.append('file', $('#photo')[0].files[0]);
-
-            var url;
+        function compress(file) {
+            const width = 300;
+            const height = 200;
+            const fileName = file.name;
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                        const elem = document.createElement('canvas');
+                        elem.width = width;
+                        elem.height = height;
+                        const ctx = elem.getContext('2d');
+                        // img.width and img.height will give the original dimensions
+                        ctx.drawImage(img, 0, 0, width, height);
+                        ctx.canvas.toBlob((blob) => {
+                            const file = new File([blob], fileName, {
+                                type: 'image/jpg',
+                                lastModified: Date.now()
+                            });
+                          var url;
             var extension = file.name.split(".").pop();
 
             switch (extension) {
@@ -358,7 +384,7 @@
             if (url === "") {
                 alert("Please Upload the another Image");
             } else {
-                imageUpload('PUT', s3_url, file, function(err, data) {
+                imageUpload('PUT', url, file, function(err, data) {
                     if (err) {
                         alert("error occurred on upload.Please retry")
                     } else {
@@ -374,7 +400,19 @@
                 })
             }
 
+                            })
+                        }, 'image/jpg', 1);
+                    },
+                    reader.onerror = error => console.log(error);
+            };
+        }
 
+        function uploadImage() {
+            var formData = new FormData();
+            var file = $('#photo')[0].files[0];
+            formData.append('file', $('#photo')[0].files[0]);
+            var fileCom = compress(file);
+            console.log(fileCom);
         }
 
         function extractURLString(str) {
